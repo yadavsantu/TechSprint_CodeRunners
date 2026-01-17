@@ -46,7 +46,7 @@ const Login = () => {
       
       console.log('Login success');
    
-      const role = result?.user?.role || 'user';
+      const role = result?.data?.role || 'user';
       switch (role) {
         case 'driver':
           navigate('/dashboard/driver');
