@@ -9,7 +9,7 @@ const accidentSchema = new mongoose.Schema(
     },
 
     description: {
-      type: String,
+      type: String, 
       minlength: 10,
       maxlength: 1000,
     },
