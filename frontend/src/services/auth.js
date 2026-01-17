@@ -3,7 +3,7 @@ import axiosInstance from '../utils/axios.js';
 // Login User
 export const loginUser = async (credentials) => {
   try {
-    const response = await axiosInstance.post('/auth/login', credentials);
+    const response = await axiosInstance.post('/login', credentials);
     
     return response.data; // Just return the entire response from backend
   } catch (error) {
@@ -15,7 +15,7 @@ export const loginUser = async (credentials) => {
 // Signup User
 export const signupUser = async (userData) => {
   try {
-    const response = await axiosInstance.post('/auth/signup', userData);
+    const response = await axiosInstance.post('/register', userData);
     
     return response.data; // Just return the entire response from backend
   } catch (error) {

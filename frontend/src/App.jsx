@@ -64,9 +64,9 @@ const PublicRoute = ({ children }) => {
 const getDashboardPath = (role) => {
   switch (role) {
     case "driver":
-      return "/driver/dashboard";
+      return "/dashboard/driver";
     case "hospital":
-      return "/hospital/dashboard";
+      return "/dashboard/hospital";
     case "user":
     default:
       return "/dashboard";
@@ -85,9 +85,6 @@ const RootRedirect = () => {
   return <Navigate to={dashboardPath} replace />;
 };
 
-// ---------------------
-// Router
-// ---------------------
 const router = createBrowserRouter([
   {
     path: "/",
@@ -112,7 +109,7 @@ const router = createBrowserRouter([
 
       // Hospital Dashboard
       {
-        path: "/dashboard/hospital",
+        path: "/dashboard/hospita",
         element: <RoleBasedRoute allowedRoles={["hospital"]}><HospitalDashboard /></RoleBasedRoute>,
       },
 

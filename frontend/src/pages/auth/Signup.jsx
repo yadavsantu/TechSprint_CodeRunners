@@ -107,6 +107,7 @@ const Signup = () => {
         email: formData.email,
         phone: formData.phone,
         password: formData.password,
+        confirmPassword: formData.confirmPassword
       });
       
       console.log('Signup success');

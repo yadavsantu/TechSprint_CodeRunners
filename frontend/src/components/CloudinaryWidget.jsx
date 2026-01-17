@@ -1,18 +1,29 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { Upload, AlertCircle } from "lucide-react";
 
 export default function CloudinaryUploadWidget({ onUploadSuccess }) {
   const widgetRef = useRef(null);
   const mountedRef = useRef(false);
+  const widgetInitializedRef = useRef(false);
 
   const [status, setStatus] = useState("loading"); // loading | ready | error
   const [errorMessage, setErrorMessage] = useState("");
 
+  // Memoize the callback to prevent unnecessary re-renders
+  const handleUploadSuccess = useCallback((info) => {
+    if (onUploadSuccess) {
+      onUploadSuccess(info);
+    }
+  }, [onUploadSuccess]);
+
   useEffect(() => {
     mountedRef.current = true;
-     setStatus("loading");
+    
+    // Only initialize once
+    if (widgetInitializedRef.current) return;
+    
+    setStatus("loading");
 
-    // ✅ VITE ENV VARIABLES
     const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
     const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
 
@@ -35,80 +46,99 @@ VITE_CLOUDINARY_UPLOAD_PRESET=${uploadPreset || "your_upload_preset"}`
         return;
       }
 
-      // Destroy old widget if exists
+      // Only create widget if it doesn't exist
       if (widgetRef.current) {
-        try {
-          widgetRef.current.destroy();
-        } catch (e) {
-          console.warn("Widget destroy failed", e);
-        }
-        widgetRef.current = null;
+        setStatus("ready");
+        return;
       }
 
-      widgetRef.current = window.cloudinary.createUploadWidget(
-        {
-          cloudName,
-          uploadPreset,
-          sources: ["local", "camera"],
-          multiple: true,
-          maxFiles: 5,
-          clientAllowedFormats: [
-            "jpg",
-            "jpeg",
-            "png",
-            "gif",
-            "webp",
-            "mp4",
-            "mov",
-          ],
-          maxFileSize: 10_000_000, // 10MB
-          folder: "accident_reports",
-        },
-        (error, result) => {
-          if (!mountedRef.current) return;
+      try {
+        widgetRef.current = window.cloudinary.createUploadWidget(
+          {
+            cloudName,
+            uploadPreset,
+            sources: ["local", "camera"],
+            multiple: true,
+            maxFiles: 5,
+            clientAllowedFormats: [
+              "jpg",
+              "jpeg",
+              "png",
+              "gif",
+              "webp",
+              "mp4",
+              "mov",
+            ],
+            maxFileSize: 10_000_000, // 10MB
+            folder: "accident_reports",
+            showAdvancedOptions: false,
+            showPoweredBy: false,
+            singleUploadAutoClose: false,
+          },
+          (error, result) => {
+            if (!mountedRef.current) return;
+            
+            if (error) {
+              console.error("Upload widget error:", error);
+              // Don't set error state here unless it's a critical error
+              // Cloudinary sometimes throws non-critical errors
+              return;
+            }
 
-          if (error) {
-            setStatus("error");
-            setErrorMessage(error.message || "Upload failed");
-            return;
+            if (result && result.event === "success") {
+              console.log("Upload successful:", result.info);
+              handleUploadSuccess(result.info);
+            } else if (result && result.event === "close") {
+              console.log("Widget closed");
+            }
           }
+        );
 
-          if (result?.event === "success") {
-            onUploadSuccess?.(result.info);
-          }
-        }
-      );
-
-      setStatus("ready");
+        widgetInitializedRef.current = true;
+        setStatus("ready");
+      } catch (error) {
+        console.error("Failed to create widget:", error);
+        setStatus("error");
+        setErrorMessage("Failed to initialize upload widget");
+      }
     };
 
     // Load script if not already loaded
     if (window.cloudinary) {
-      setTimeout(loadWidget, 100);
+      loadWidget();
     } else {
       const script = document.createElement("script");
       script.src = "https://upload-widget.cloudinary.com/global/all.js";
       script.async = true;
+      script.id = "cloudinary-script";
 
-      script.onload = () => setTimeout(loadWidget, 200);
+      script.onload = () => {
+        // Give it a moment to initialize
+        setTimeout(loadWidget, 100);
+      };
+      
       script.onerror = () => {
         if (!mountedRef.current) return;
         setStatus("error");
         setErrorMessage("Failed to load Cloudinary upload widget");
       };
 
-      document.body.appendChild(script);
+      // Check if script already exists
+      if (!document.getElementById("cloudinary-script")) {
+        document.body.appendChild(script);
+      } else {
+        // Script already exists, just initialize
+        setTimeout(loadWidget, 100);
+      }
     }
 
     return () => {
       mountedRef.current = false;
-      if (widgetRef.current) {
-        try {
-          widgetRef.current.destroy();
-        } catch {}
-      }
+      // Don't destroy widget on cleanup if we want to reuse it
+      // Only destroy on actual component unmount
+      widgetInitializedRef.current = false;
     };
-  }, [onUploadSuccess]);
+  }, [handleUploadSuccess]); // Only depend on the memoized callback
 
   const openWidget = () => {
     if (!widgetRef.current) {
@@ -116,7 +146,14 @@ VITE_CLOUDINARY_UPLOAD_PRESET=${uploadPreset || "your_upload_preset"}`
       setErrorMessage("Upload widget not ready. Refresh the page.");
       return;
     }
-    widgetRef.current.open();
+    
+    try {
+      widgetRef.current.open();
+    } catch (error) {
+      console.error("Error opening widget:", error);
+      setStatus("error");
+      setErrorMessage("Failed to open upload widget. Please refresh.");
+    }
   };
 
   return (

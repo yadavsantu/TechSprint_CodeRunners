@@ -22,6 +22,7 @@ export const useAuthStore = create(
             isAuthenticated: true,
             isLoading: false,
           });
+          console.log("Auth Store - Login successful:", result);
           return result;
         } catch (error) {
           set({ 

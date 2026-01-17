@@ -50,14 +50,14 @@ const Login = () => {
       const role = result?.user?.role || 'user';
       switch (role) {
         case 'driver':
-          navigate('/driver/dashboard');
+          navigate('/dashboard/driver');
           break;
         case 'hospital':
-          navigate('/hospital/dashboard');
+          navigate('/dashboard/hospital');
           break;
         case 'user':
         default:
-          navigate('/dashboard');
+          navigate('/dashboard/user');
           break;
       }
     } catch (error) {

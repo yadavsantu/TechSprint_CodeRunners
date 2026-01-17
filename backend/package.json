@@ -1,4 +1,11 @@
 {
+  "name": "backend",
+  "version": "1.0.0",
+ 
+  "scripts": {
+    "start": "nodemon index.js",
+    "dev": "nodemon index.js"
+  },
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
@@ -8,7 +15,9 @@
     "express": "^5.2.1",
     "joi": "^18.0.2",
     "jsonwebtoken": "^9.0.3",
-    "mongoose": "^9.1.4",
+    "mongoose": "^9.1.4"
+  },
+  "devDependencies": {
     "nodemon": "^3.1.11"
   }
 }
