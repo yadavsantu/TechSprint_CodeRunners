@@ -88,32 +88,33 @@ const RootRedirect = () => {
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <MainLayout />,  // Layout wraps all child routes
+    element: <MainLayout />,
     children: [
-      { path: "/", element: <HomePage /> },
-      { path: "/login", element: <PublicRoute><Login /></PublicRoute> },
-      { path: "/signup", element: <PublicRoute><Signup /></PublicRoute> },
-      { path: "/unauthorized", element: <Unauthorized /> },
+      { index: true, element: <HomePage /> },
 
-      // User Dashboard
+      { path: "login", element: <PublicRoute><Login /></PublicRoute> },
+      { path: "signup", element: <PublicRoute><Signup /></PublicRoute> },
+      { path: "unauthorized", element: <Unauthorized /> },
+
       {
-        path: "/dashboard/user",
-        element: <RoleBasedRoute allowedRoles={["user"]}><UserDashboard /></RoleBasedRoute>,
+        path: "dashboard",
+        element: <RoleBasedRoute allowedRoles={["user", "driver", "hospital"]}><Outlet /></RoleBasedRoute>,
+        children: [
+          {
+            path: "user",
+            element: <RoleBasedRoute allowedRoles={["user"]}><UserDashboard /></RoleBasedRoute>,
+          },
+          {
+            path: "driver",
+            element: <RoleBasedRoute allowedRoles={["driver"]}><DriverDashboard /></RoleBasedRoute>,
+          },
+          {
+            path: "hospital",
+            element: <RoleBasedRoute allowedRoles={["hospital"]}><HospitalDashboard /></RoleBasedRoute>,
+          },
+        ],
       },
 
-      // Driver Dashboard
-      {
-        path: "/dashboard/driver",
-        element: <RoleBasedRoute allowedRoles={["driver"]}><DriverDashboard /></RoleBasedRoute>,
-      },
-
-      // Hospital Dashboard
-      {
-        path: "/dashboard/hospital",
-        element: <RoleBasedRoute allowedRoles={["hospital"]}><HospitalDashboard /></RoleBasedRoute>,
-      },
-
-      // Catch-all
       { path: "*", element: <RootRedirect /> },
     ],
   },
