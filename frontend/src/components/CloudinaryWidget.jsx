@@ -10,6 +10,7 @@ export default function CloudinaryUploadWidget({ onUploadSuccess }) {
 
   useEffect(() => {
     mountedRef.current = true;
+     setStatus("loading");
 
     // ✅ VITE ENV VARIABLES
     const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;

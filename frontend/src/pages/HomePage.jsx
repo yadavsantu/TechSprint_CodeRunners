@@ -1,5 +1,4 @@
 
-
 import { useState, useEffect } from "react";
 import { Camera, Phone, X, Check, Upload } from "lucide-react";
 import CloudinaryUploadWidget from "../components/CloudinaryWidget";
