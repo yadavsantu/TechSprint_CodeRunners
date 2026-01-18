@@ -22,7 +22,7 @@ const updateAccidentStatusController = async (req, res, next) => {
     const accident = await Accident.findByIdAndUpdate(
       id,
       { status },
-      { new: true }
+      { new: true },
     );
 
     if (!accident) {
@@ -35,7 +35,16 @@ const updateAccidentStatusController = async (req, res, next) => {
 
     // 🔔 Trigger WhatsApp only when verified
     if (status === "verified") {
-      handleAccidentAccepted(accident).catch(console.error);
+      // handleAccidentAccepted(accident).catch(console.error);
+      const zoneRoom = `zone-${accident.zoneId || "default"}`;
+      global.io.to(zoneRoom).emit("new-emergency", {
+        accidentId: accident._id,
+        title: "New Accident",
+        description: accident.description,
+        location: accident.location,
+        time: accident.createdAt,
+      });
+      console.log("Emitted new-emergency to", zoneRoom);
     }
 
     return res.status(200).json({

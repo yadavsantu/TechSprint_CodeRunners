@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Accident Detection</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 800px;
+            padding: 40px;
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        
+        .upload-area {
+            border: 3px dashed #ccc;
+            border-radius: 15px;
+            padding: 50px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 30px;
+        }
+        
+        .upload-area:hover, .upload-area.dragover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+        
+        .upload-icon {
+            font-size: 60px;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+        
+        .upload-text {
+            font-size: 1.2em;
+            color: #555;
+            margin-bottom: 10px;
+        }
+        
+        .upload-hint {
+            color: #888;
+            font-size: 0.9em;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            display: block;
+            margin: 20px auto;
+        }
+        
+        .btn:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .preview {
+            text-align: center;
+            margin: 30px 0;
+        }
+        
+        .preview img {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .result {
+            padding: 25px;
+            border-radius: 15px;
+            margin-top: 30px;
+            text-align: center;
+            animation: fadeIn 0.5s;
+        }
+        
+        .accident {
+            background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+            color: white;
+        }
+        
+        .no-accident {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+        
+        .result h2 {
+            margin-bottom: 15px;
+            font-size: 2em;
+        }
+        
+        .confidence {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        
+        .message {
+            font-size: 1.2em;
+            margin-top: 15px;
+            opacity: 0.9;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 30px;
+        }
+        
+        .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            color: #666;
+            font-size: 0.9em;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚨 Accident Detection System</h1>
+        <p class="subtitle">Upload an image to check if it contains an accident scene</p>
+        
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📁</div>
+            <div class="upload-text">Drag & drop your image here</div>
+            <div class="upload-hint">or click to browse (JPG, PNG, GIF - Max 16MB)</div>
+            <input type="file" id="fileInput" class="file-input" accept="image/*">
+        </div>
+        
+        <button id="analyzeBtn" class="btn hidden" disabled>Analyze Image</button>
+        
+        <div class="preview hidden" id="preview">
+            <img id="imagePreview" src="" alt="Preview">
+        </div>
+        
+        <div class="loading hidden" id="loading">
+            <div class="spinner"></div>
+            <p>Analyzing image for accident detection...</p>
+        </div>
+        
+        <div class="result hidden" id="result">
+            <!-- Results will be inserted here -->
+        </div>
+        
+        <footer>
+            <p>Powered by AI Accident Detection Model | Emergency Response System</p>
+        </footer>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            const preview = document.getElementById('preview');
+            const imagePreview = document.getElementById('imagePreview');
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+            
+            let selectedFile = null;
+            
+            // Click to upload
+            uploadArea.addEventListener('click', () => fileInput.click());
+            
+            // Drag and drop
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                
+                if (e.dataTransfer.files.length) {
+                    handleFile(e.dataTransfer.files[0]);
+                }
+            });
+            
+            // File input change
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length) {
+                    handleFile(e.target.files[0]);
+                }
+            });
+            
+            // Analyze button
+            analyzeBtn.addEventListener('click', analyzeImage);
+            
+            function handleFile(file) {
+                // Validate file
+                if (!file.type.match('image.*')) {
+                    alert('Please select an image file (JPG, PNG, GIF)');
+                    return;
+                }
+                
+                if (file.size > 16 * 1024 * 1024) {
+                    alert('File size should be less than 16MB');
+                    return;
+                }
+                
+                selectedFile = file;
+                
+                // Show preview
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    preview.classList.remove('hidden');
+                    analyzeBtn.classList.remove('hidden');
+                    analyzeBtn.disabled = false;
+                    result.classList.add('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+            
+            function analyzeImage() {
+                if (!selectedFile) return;
+                
+                // Show loading, hide other elements
+                loading.classList.remove('hidden');
+                preview.classList.add('hidden');
+                analyzeBtn.classList.add('hidden');
+                
+                // Upload to server
+                const formData = new FormData();
+                formData.append('image', selectedFile);
+                
+                fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    loading.classList.add('hidden');
+                    showResult(data);
+                })
+                .catch(error => {
+                    loading.classList.add('hidden');
+                    alert('Error: ' + error.message);
+                    resetForm();
+                });
+            }
+            
+            function showResult(data) {
+                if (data.error) {
+                    result.innerHTML = `
+                        <div class="result" style="background: #ff9800;">
+                            <h2>⚠️ Error</h2>
+                            <p>${data.error}</p>
+                            <button class="btn" onclick="location.reload()">Try Again</button>
+                        </div>
+                    `;
+                    result.classList.remove('hidden');
+                    return;
+                }
+                
+                const isAccident = data.is_accident;
+                const confidence = (data.confidence * 100).toFixed(1);
+                const message = data.message;
+                
+                result.innerHTML = `
+                    <div class="${isAccident ? 'accident' : 'no-accident'}">
+                        <h2>${isAccident ? '🚨 ACCIDENT DETECTED!' : '✅ NO ACCIDENT'}</h2>
+                        <div class="confidence">${confidence}%</div>
+                        <p class="message">${message}</p>
+                        <button class="btn" onclick="location.reload()" 
+                                style="background: white; color: ${isAccident ? '#ff416c' : '#11998e'}; margin-top: 20px;">
+                            Analyze Another Image
+                        </button>
+                    </div>
+                `;
+                
+                result.classList.remove('hidden');
+            }
+            
+            function resetForm() {
+                selectedFile = null;
+                fileInput.value = '';
+                preview.classList.add('hidden');
+                analyzeBtn.classList.add('hidden');
+                analyzeBtn.disabled = true;
+                result.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
