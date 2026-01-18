@@ -2,86 +2,66 @@ import { useState, useEffect } from "react";
 import { 
   User, Mail, Phone, MapPin, Calendar, 
   FileText, Clock, CheckCircle, AlertCircle,
-  Edit, LogOut, TrendingUp, Shield, Bell
+  Edit, LogOut, TrendingUp, Shield, Bell, Loader
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { useAuthStore } from "../store/useAuthStore";
-import ProfileEditModal from "../components/ProfileEditModal";
+import { getUserProfile, getUserReports } from "../services/user";
 
 const UserDashboard = () => {
-  const navigate = useNavigate();
-  const { user, logout } = useAuthStore();
   const [showEditModal, setShowEditModal] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   
-  // Mock data - replace with actual API calls
-  const [stats, setStats] = useState({
-    totalReports: 12,
-    pendingReports: 3,
-    resolvedReports: 8,
-    inProgressReports: 1,
-    recentReports: []
-  });
-
   const [userData, setUserData] = useState({
-    name: "John Doe",
-    email: "john@example.com",
-    phone: "+977 9876543210",
-    address: "Kathmandu, Nepal",
-    joinDate: "2024-01-15",
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    joinDate: "",
     avatar: null
   });
 
-  // Recent reports mock data
-  const recentReports = [
-    {
-      id: 1,
-      date: "2024-03-20",
-      location: "Baneshwor, Kathmandu",
-      type: "Car Accident",
-      status: "resolved",
-      description: "Two vehicles collision"
-    },
-    {
-      id: 2,
-      date: "2024-03-18",
-      location: "Maitighar, Kathmandu",
-      type: "Emergency Medical",
-      status: "pending",
-      description: "Pedestrian injury"
-    },
-    {
-      id: 3,
-      date: "2024-03-15",
-      location: "Thamel, Kathmandu",
-      type: "Fire Incident",
-      status: "in-progress",
-      description: "Small electrical fire"
-    }
-  ];
-
+  const [reports, setReports] = useState([]);
   const [activeTab, setActiveTab] = useState('overview');
   
   useEffect(() => {
-    // Fetch user data and reports from API
-    fetchUserData();
-    fetchReports();
+    fetchData();
   }, []);
 
-  const fetchUserData = async () => {
-    // API call to get user data
-    // const response = await api.get('/user/profile');
-    // setUserData(response.data);
-  };
-
-  const fetchReports = async () => {
-    // API call to get user reports
-    // const response = await api.get('/user/reports');
-    // setStats(response.data);
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // Fetch both profile and reports in parallel
+      const [profileData, reportsData] = await Promise.all([
+        getUserProfile(),
+        getUserReports()
+      ]);
+      
+      // Map API response to component state
+      setUserData({
+        name: profileData.name || profileData.fullName || "User",
+        email: profileData.email || "",
+        phone: profileData.phone || profileData.phoneNumber || "",
+        address: profileData.address || profileData.location || "Not provided",
+        joinDate: profileData.createdAt ? new Date(profileData.createdAt).toLocaleDateString() : "",
+        avatar: profileData.avatar || profileData.profileImage || null
+      });
+      
+      // Handle different response structures
+      setReports(reportsData.reports || reportsData || []);
+    } catch (err) {
+      setError(err.message);
+      console.error("Error fetching data:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleLogout = async () => {
-    await logout();
-    navigate('/login');
+    // Your logout logic here
+    // await logout();
+    // navigate to login
   };
 
   const handleProfileUpdate = (updatedData) => {
@@ -89,23 +69,47 @@ const UserDashboard = () => {
     // API call to update profile
   };
 
+  // Calculate stats directly from reports array using .length
+  const stats = {
+    totalReports: reports.length,
+    pendingReports: reports.filter(r => r.status === 'pending').length,
+    resolvedReports: reports.filter(r => r.status === 'resolved').length,
+    inProgressReports: reports.filter(r => r.status === 'in-progress' || r.status === 'in_progress').length,
+  };
+
+  // Get recent reports (last 3)
+  const recentReports = reports.slice(0, 3);
+
   const getStatusColor = (status) => {
-    switch (status) {
+    switch (status?.toLowerCase()) {
       case 'resolved': return 'bg-green-100 text-green-800';
       case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'in-progress': return 'bg-blue-100 text-blue-800';
+      case 'in-progress':
+      case 'in_progress': return 'bg-blue-100 text-blue-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getStatusIcon = (status) => {
-    switch (status) {
+    switch (status?.toLowerCase()) {
       case 'resolved': return <CheckCircle className="w-4 h-4" />;
       case 'pending': return <Clock className="w-4 h-4" />;
-      case 'in-progress': return <AlertCircle className="w-4 h-4" />;
+      case 'in-progress':
+      case 'in_progress': return <AlertCircle className="w-4 h-4" />;
       default: return null;
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
@@ -140,21 +144,32 @@ const UserDashboard = () => {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg mb-6">
+            <p className="font-medium">Error loading data</p>
+            <p className="text-sm">{error}</p>
+            <button 
+              onClick={fetchData}
+              className="mt-2 text-sm underline hover:no-underline"
+            >
+              Try again
+            </button>
+          </div>
+        )}
+
         {/* Welcome Banner */}
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 text-white mb-8">
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-bold mb-2">
-                Welcome back, {userData.name}!
+                Welcome back, {userData.name || "User"}!
               </h1>
               <p className="text-blue-100">
                 Thank you for helping make our community safer. Your reports matter.
               </p>
             </div>
-            <button
-              onClick={() => navigate('/report')}
-              className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
-            >
+            <button className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors">
               Submit New Report
             </button>
           </div>
@@ -186,16 +201,16 @@ const UserDashboard = () => {
                   </button>
                 </div>
                 
-                <h2 className="text-xl font-bold text-gray-900">{userData.name}</h2>
+                <h2 className="text-xl font-bold text-gray-900">{userData.name || "User"}</h2>
                 <p className="text-gray-500">Verified Citizen</p>
               </div>
 
               <div className="space-y-4">
                 <div className="flex items-center space-x-3">
                   <Mail className="w-5 h-5 text-gray-400" />
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <p className="text-sm text-gray-500">Email</p>
-                    <p className="font-medium">{userData.email}</p>
+                    <p className="font-medium truncate">{userData.email || "Not provided"}</p>
                   </div>
                 </div>
 
@@ -203,7 +218,7 @@ const UserDashboard = () => {
                   <Phone className="w-5 h-5 text-gray-400" />
                   <div>
                     <p className="text-sm text-gray-500">Phone</p>
-                    <p className="font-medium">{userData.phone}</p>
+                    <p className="font-medium">{userData.phone || "Not provided"}</p>
                   </div>
                 </div>
 
@@ -219,7 +234,7 @@ const UserDashboard = () => {
                   <Calendar className="w-5 h-5 text-gray-400" />
                   <div>
                     <p className="text-sm text-gray-500">Member Since</p>
-                    <p className="font-medium">{userData.joinDate}</p>
+                    <p className="font-medium">{userData.joinDate || "Unknown"}</p>
                   </div>
                 </div>
               </div>
@@ -235,7 +250,7 @@ const UserDashboard = () => {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Lives Potentially Saved</span>
-                  <span className="font-bold text-green-600">24+</span>
+                  <span className="font-bold text-green-600">{stats.totalReports * 2}+</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Response Time Avg</span>
@@ -336,128 +351,151 @@ const UserDashboard = () => {
                 {activeTab === 'overview' && (
                   <div>
                     <h3 className="text-lg font-bold text-gray-900 mb-4">Recent Activity</h3>
-                    <div className="space-y-4">
-                      {recentReports.map((report) => (
-                        <div key={report.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                          <div>
-                            <div className="flex items-center space-x-2 mb-1">
-                              <span className="font-medium">{report.type}</span>
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(report.status)}`}>
-                                <span className="flex items-center space-x-1">
-                                  {getStatusIcon(report.status)}
-                                  <span>{report.status}</span>
+                    {recentReports.length === 0 ? (
+                      <div className="text-center py-8">
+                        <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                        <p className="text-gray-500">No reports yet</p>
+                        <p className="text-sm text-gray-400 mt-1">Submit your first report to get started</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {recentReports.map((report) => (
+                          <div key={report.id || report._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2 mb-1">
+                                <span className="font-medium">{report.type || report.incidentType || "Report"}</span>
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(report.status)}`}>
+                                  <span className="flex items-center space-x-1">
+                                    {getStatusIcon(report.status)}
+                                    <span>{report.status}</span>
+                                  </span>
                                 </span>
-                              </span>
+                              </div>
+                              <p className="text-sm text-gray-600">{report.description || "No description"}</p>
+                              <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                                <span className="flex items-center">
+                                  <MapPin className="w-4 h-4 mr-1" />
+                                  {report.location || "Unknown location"}
+                                </span>
+                                <span className="flex items-center">
+                                  <Calendar className="w-4 h-4 mr-1" />
+                                  {report.date ? new Date(report.date).toLocaleDateString() : 
+                                   report.createdAt ? new Date(report.createdAt).toLocaleDateString() : "Unknown date"}
+                                </span>
+                              </div>
                             </div>
-                            <p className="text-sm text-gray-600">{report.description}</p>
-                            <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
-                              <span className="flex items-center">
-                                <MapPin className="w-4 h-4 mr-1" />
-                                {report.location}
-                              </span>
-                              <span className="flex items-center">
-                                <Calendar className="w-4 h-4 mr-1" />
-                                {report.date}
-                              </span>
-                            </div>
+                            <button className="ml-4 text-blue-600 hover:text-blue-800 text-sm font-medium whitespace-nowrap">
+                              View Details
+                            </button>
                           </div>
-                          <button
-                            onClick={() => navigate(`/report/${report.id}`)}
-                            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                          >
-                            View Details
-                          </button>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
 
                 {activeTab === 'reports' && (
                   <div>
                     <h3 className="text-lg font-bold text-gray-900 mb-4">All Reports</h3>
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead>
-                          <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Date
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Type
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Location
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Status
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Actions
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                          {recentReports.map((report) => (
-                            <tr key={report.id}>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="text-sm text-gray-900">{report.date}</div>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="text-sm font-medium text-gray-900">{report.type}</div>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="text-sm text-gray-500">{report.location}</div>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(report.status)}`}>
-                                  {report.status}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <button
-                                  onClick={() => navigate(`/report/${report.id}`)}
-                                  className="text-blue-600 hover:text-blue-900 mr-4"
-                                >
-                                  View
-                                </button>
-                                <button
-                                  className="text-red-600 hover:text-red-900"
-                                >
-                                  Delete
-                                </button>
-                              </td>
+                    {reports.length === 0 ? (
+                      <div className="text-center py-12">
+                        <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                        <p className="text-gray-500 text-lg">No reports found</p>
+                        <p className="text-sm text-gray-400 mt-2">Start by submitting your first emergency report</p>
+                        <button className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                          Submit Report
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead>
+                            <tr>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Date
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Type
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Location
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Status
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Actions
+                              </th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {reports.map((report) => (
+                              <tr key={report.id || report._id}>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="text-sm text-gray-900">
+                                    {report.date ? new Date(report.date).toLocaleDateString() : 
+                                     report.createdAt ? new Date(report.createdAt).toLocaleDateString() : "Unknown"}
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {report.type || report.incidentType || "Report"}
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="text-sm text-gray-500">{report.location || "Unknown"}</div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(report.status)}`}>
+                                    {report.status}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                  <button className="text-blue-600 hover:text-blue-900 mr-4">
+                                    View
+                                  </button>
+                                  <button className="text-red-600 hover:text-red-900">
+                                    Delete
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
                   </div>
                 )}
 
                 {activeTab === 'activity' && (
                   <div>
                     <h3 className="text-lg font-bold text-gray-900 mb-4">Activity Timeline</h3>
-                    <div className="space-y-6">
-                      {[
-                        { date: 'Today', action: 'Submitted a new report', time: '10:30 AM' },
-                        { date: 'Yesterday', action: 'Report #15 was resolved', time: '2:15 PM' },
-                        { date: 'Mar 18', action: 'Updated profile information', time: '9:00 AM' },
-                      ].map((activity, index) => (
-                        <div key={index} className="flex items-start space-x-4">
-                          <div className="flex flex-col items-center">
-                            <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
-                            {index < 2 && <div className="w-0.5 h-12 bg-gray-200"></div>}
+                    {reports.length === 0 ? (
+                      <div className="text-center py-8">
+                        <Clock className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                        <p className="text-gray-500">No activity yet</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-6">
+                        {reports.slice(0, 5).map((report, index) => (
+                          <div key={report.id || report._id} className="flex items-start space-x-4">
+                            <div className="flex flex-col items-center">
+                              <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
+                              {index < Math.min(reports.length - 1, 4) && <div className="w-0.5 h-12 bg-gray-200"></div>}
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900">
+                                Submitted {report.type || report.incidentType || "a report"}
+                              </p>
+                              <p className="text-sm text-gray-500">
+                                {report.createdAt ? new Date(report.createdAt).toLocaleDateString() : "Unknown date"} • 
+                                {report.createdAt ? ` ${new Date(report.createdAt).toLocaleTimeString()}` : ""}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-medium text-gray-900">{activity.action}</p>
-                            <p className="text-sm text-gray-500">
-                              {activity.date} • {activity.time}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -481,15 +519,6 @@ const UserDashboard = () => {
           </div>
         </div>
       </div>
-
-      {/* Profile Edit Modal */}
-      {showEditModal && (
-        <ProfileEditModal
-          userData={userData}
-          onClose={() => setShowEditModal(false)}
-          onSave={handleProfileUpdate}
-        />
-      )}
     </div>
   );
 };

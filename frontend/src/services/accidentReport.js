@@ -20,12 +20,11 @@ export const submitAccidentReport = async (reportData) => {
   }
 };
 
-/**
- * Get all accident reports (admin / dashboard)
- */
+
 export const getAllAccidentReports = async () => {
   try {
     const response = await axiosInstance.get('/accident/accidents');
+    console.log("Fetched accident reports:", response.data);
     return response.data;
   } catch (error) {
     const errorMessage = error.response?.data?.message || 'Failed to fetch accident reports.';
