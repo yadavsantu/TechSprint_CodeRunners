@@ -19,7 +19,7 @@ const AdminReports = () => {
   const [dateRange, setDateRange] = useState('month');
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [viewType, setViewType] = useState('table'); // 'table' or 'grid'
+  const [viewType, setViewType] = useState('table'); 
 
   // Fetch reports
   useEffect(() => {

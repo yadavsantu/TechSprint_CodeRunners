@@ -4,6 +4,7 @@ import CloudinaryUploadWidget from "../components/CloudinaryWidget";
 import { submitAccidentReport } from "../services/accidentReport";
 
 import GoogleMap from "../components/GoogleMap";
+import { toast } from "react-hot-toast";
 
 const SimpleReportForm = () => {
   const [formData, setFormData] = useState({
@@ -38,7 +39,7 @@ const SimpleReportForm = () => {
         });
       },
       () => alert("Location permission denied"),
-      { enableHighAccuracy: true }
+      { enableHighAccuracy: true },
     );
   }, []);
 
@@ -90,8 +91,8 @@ const SimpleReportForm = () => {
 
     try {
       const res = await submitAccidentReport(payload);
-
-      alert("Report submitted successfully");
+      toast.success("Report submitted successfully!");
+      console.log("Report submitted:", res);
 
       // Reset state
       setFormData({ description: "", contactNumber: "" });

@@ -1,35 +1,33 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { loginUser, signupUser, logoutUser,loginDriverService } from "../services/auth";
-
+import { toast } from "react-hot-toast";
 export const useAuthStore = create(
   persist(
     (set) => ({
-      // ------------------
-      // STATE
-      // ------------------
-      user: null,               // { id, email, role, ... }
+    
+      user: null,              
       token: null,
       isAuthenticated: false,
       isLoading: false,
       error: null,
 
-      // ------------------
-      // ACTIONS
-      // ------------------
+    
       login: async (credentials) => {
         set({ isLoading: true, error: null });
 
         try {
           const result = await loginUser(credentials);
-        // ✅ NORMALIZED RESPONSE
+     
           set({
-            user: result.data,       // must contain role
+            user: result.data,       
             token: result.token,
             isAuthenticated: true,
             isLoading: false,
           });
+          toast.success("Login successful!");
       console.log("Auth Store - Login successful:", result);
+
           return result;
         } catch (err) {
           set({
