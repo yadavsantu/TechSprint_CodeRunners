@@ -3,14 +3,15 @@ import axiosInstance from "../utils/axios.js";
 /**
  * Submit Accident Report
  */
+
+
 export const submitAccidentReport = async (reportData) => {
   try {
     const response = await axiosInstance.post(
       "/accident/report",
       reportData
     );
-
-    return response.data; // return full backend response
+    return response.data;
   } catch (error) {
     const errorMessage =
       error.response?.data?.message ||
@@ -20,33 +21,48 @@ export const submitAccidentReport = async (reportData) => {
 };
 
 /**
- * Get all accident reports (optional - admin / dashboard)
+ * Get all accident reports (admin / dashboard)
  */
 export const getAllAccidentReports = async () => {
   try {
-    const response = await axiosInstance.get("/accident/report");
+    const response = await axiosInstance.get('/accident/accidents');
     return response.data;
   } catch (error) {
-    const errorMessage =
-      error.response?.data?.message ||
-      "Failed to fetch accident reports";
+    const errorMessage = error.response?.data?.message || 'Failed to fetch accident reports.';
     throw new Error(errorMessage);
   }
+};  
+
+/**
+ * Accept a report (update status to "accepted")
+ */
+export const acceptReport = async (id) => {
+  const response = await axiosInstance.patch(
+    `/accident/accidents/${id}/status`,
+    { status: "verified" }   // ✅ MATCH BACKEND
+  );
+  return response.data;
+};
+
+export const rejectReport = async (id) => {
+  const response = await axiosInstance.patch(
+    `/accident/accidents/${id}/status`,
+    { status: "rejected" }
+  );
+  return response.data;
 };
 
 /**
- * Get single accident report by ID (optional)
+ * Get single report by ID
  */
-export const getAccidentReportById = async (id) => {
+export const getReportById = async (id) => {
   try {
-    const response = await axiosInstance.get(
-      `/api/v1/accident/${id}`
-    );
+    const response = await axiosInstance.get(`/accident/accidents/${id}`);
     return response.data;
   } catch (error) {
     const errorMessage =
       error.response?.data?.message ||
-      "Failed to fetch accident report";
+      "Failed to fetch report";
     throw new Error(errorMessage);
   }
 };

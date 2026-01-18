@@ -4,32 +4,10 @@ import axiosInstance from '../utils/axios.js';
 // Get all accident reports
 export const getAllAccidentReports = async () => {
   try {
-    const response = await axiosInstance.get('/acidents/reports');
+    const response = await axiosInstance.get('/accident/accidents');
     return response.data;
   } catch (error) {
     const errorMessage = error.response?.data?.message || 'Failed to fetch accident reports.';
-    throw new Error(errorMessage);
-  }
-};
-
-// Accept a report
-export const acceptReport = async (reportId) => {
-  try {
-    const response = await axiosInstance.patch(`/accidents/${reportId}/status`);
-    return response.data;
-  } catch (error) {
-    const errorMessage = error.response?.data?.message || 'Failed to accept report.';
-    throw new Error(errorMessage);
-  }
-};
-
-// Reject a report
-export const rejectReport = async (reportId) => {
-  try {
-    const response = await axiosInstance.patch(`/accidents/${reportId}/status`);
-    return response.data;
-  } catch (error) {
-    const errorMessage = error.response?.data?.message || 'Failed to reject report.';
     throw new Error(errorMessage);
   }
 };
