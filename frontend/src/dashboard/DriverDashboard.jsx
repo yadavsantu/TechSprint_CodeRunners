@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Ambulance, MapPin, Phone, Bell, Radio, Power } from "lucide-react";
 import { updateAmbulanceStatus } from "../services/ambulance";
-import socket from "../services/socket"; // import your connected socket instance
+import { getSocket } from "../services/socket";
+// import your connected socket instance
 
 const MOCK_AMBULANCE = {
   _id: "507f1f77bcf86cd799439011",
@@ -20,13 +21,33 @@ export default function AmbulanceDashboard() {
   const [ambulance, setAmbulance] = useState(MOCK_AMBULANCE);
   const [notifications, setNotifications] = useState(0);
   const [emergencies, setEmergencies] = useState([]);
-  const socketRef = useRef(socket);
+  const socketRef = useRef(null);
+
+  useEffect(() => {
+    const socket = getSocket(); // get the socket instance initialized after login
+    if (!socket) return; // socket not connected yet
+    socketRef.current = socket;
+
+    if (ambulance.status === "AVAILABLE") {
+      socket.emit("join-ambulance-zone", { zoneId: "default" });
+
+      socket.on("new-emergency", (emergency) => {
+        console.log("New emergency:", emergency);
+        setEmergencies((prev) => [emergency, ...prev]);
+        setNotifications((prev) => prev + 1);
+      });
+    }
+
+    return () => {
+      socketRef.current?.off("new-emergency");
+    };
+  }, [ambulance.status]);
 
   // Listen for emergencies when online
   useEffect(() => {
     if (ambulance.status === "AVAILABLE" && socketRef.current) {
       // Join ambulance zone
-      socketRef.current.emit("join-ambulance-zone", { zoneId: "zone-1" });
+      socketRef.current.emit("join-ambulance-zone", { zoneId: "default" });
 
       // Listen for new emergencies
       socketRef.current.on("new-emergency", (emergency) => {

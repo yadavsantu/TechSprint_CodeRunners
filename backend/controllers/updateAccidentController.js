@@ -1,5 +1,7 @@
 const Accident = require("../model/accidentSchema");
-const { handleAccidentAccepted } = require("../services/accident-accept.service");
+const {
+  handleAccidentAccepted,
+} = require("../services/accident-accept.service");
 
 /**
  * PATCH /api/v1/admin/accidents/:id/status
@@ -20,7 +22,7 @@ const updateAccidentStatusController = async (req, res, next) => {
     const accident = await Accident.findByIdAndUpdate(
       id,
       { status },
-      { new: true }
+      { new: true },
     );
 
     if (!accident) {
@@ -33,18 +35,16 @@ const updateAccidentStatusController = async (req, res, next) => {
 
     // 🔔 Trigger WhatsApp only when verified
     if (status === "verified") {
-      handleAccidentAccepted(accident).catch(console.error);
-
-      // 🚨 Emit to connected ambulances via Socket.IO
-      if (global.io) {
-        // Optionally, you can send to a specific zone: io.to(`zone-${accident.zoneId}`).emit(...)
-        global.io.emit("new-emergency", {
-          accidentId: accident._id,
-          location: accident.location,
-          description: accident.description,
-          time: accident.createdAt,
-        });
-      }
+      // handleAccidentAccepted(accident).catch(console.error);
+      const zoneRoom = `zone-${accident.zoneId || "default"}`;
+      global.io.to(zoneRoom).emit("new-emergency", {
+        accidentId: accident._id,
+        title: "New Accident",
+        description: accident.description,
+        location: accident.location,
+        time: accident.createdAt,
+      });
+      console.log("Emitted new-emergency to", zoneRoom);
     }
 
     return res.status(200).json({
