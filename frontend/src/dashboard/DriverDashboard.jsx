@@ -43,27 +43,6 @@ export default function AmbulanceDashboard() {
     };
   }, [ambulance.status]);
 
-  // Listen for emergencies when online
-  useEffect(() => {
-    if (ambulance.status === "AVAILABLE" && socketRef.current) {
-      // Join ambulance zone
-      socketRef.current.emit("join-ambulance-zone", { zoneId: "default" });
-
-      // Listen for new emergencies
-      socketRef.current.on("new-emergency", (emergency) => {
-        console.log("New emergency received:", emergency);
-        setEmergencies((prev) => [emergency, ...prev]);
-        setNotifications((prev) => prev + 1);
-      });
-    }
-
-    // Cleanup when offline or unmount
-    return () => {
-      if (socketRef.current) {
-        socketRef.current.off("new-emergency");
-      }
-    };
-  }, [ambulance.status]);
 
   // Toggle ambulance status
   const handleStatusToggle = async () => {
@@ -148,16 +127,34 @@ export default function AmbulanceDashboard() {
               emergencies.map((emergency, idx) => (
                 <div
                   key={idx}
-                  className="bg-white rounded-lg shadow-md p-4 border-l-4 border-red-500"
+                  className="bg-white rounded-lg shadow-md p-4 border-l-4 border-red-500 flex flex-col gap-3"
                 >
-                  <h4 className="font-semibold text-gray-900">
-                    {emergency.title}
-                  </h4>
-                  <p className="text-gray-600">{emergency.description}</p>
-                  <p className="text-xs text-gray-400">
-                    Location: {emergency.location.latitude.toFixed(4)},{" "}
-                    {emergency.location.longitude.toFixed(4)}
-                  </p>
+                  <div>
+                    <h4 className="font-semibold text-gray-900">
+                      {emergency.title}
+                    </h4>
+                    <p className="text-gray-600">{emergency.description}</p>
+                    <p className="text-xs text-gray-400">
+                      Location: {emergency.location.latitude.toFixed(4)},{" "}
+                      {emergency.location.longitude.toFixed(4)}
+                    </p>
+                  </div>
+
+                  {/* Accept / Reject buttons */}
+                  <div className="flex gap-2">
+                    <button
+                      className="flex-1 py-1 px-2 bg-green-500 text-white rounded hover:bg-green-600"
+                      onClick={() => alert("Accept clicked")}
+                    >
+                      Accept
+                    </button>
+                    <button
+                      className="flex-1 py-1 px-2 bg-red-500 text-white rounded hover:bg-red-600"
+                      onClick={() => alert("Reject clicked")}
+                    >
+                      Reject
+                    </button>
+                  </div>
                 </div>
               ))
             )}
